@@ -28,7 +28,6 @@ const ResultsScreen = ({ userRole, purpose, time, onRestart }: ResultsScreenProp
 
       try {
         const result = await submitMatchingRequest(userRole, purpose, time);
-        
         if (result) {
           if (result.matched) {
             // Immediate match found
@@ -51,7 +50,7 @@ const ResultsScreen = ({ userRole, purpose, time, onRestart }: ResultsScreenProp
               setIsMatched(false);
               setLoading(false);
               cleanup();
-            }, 30000);
+            }, 10000);
 
             return () => {
               cleanup();
@@ -75,7 +74,7 @@ const ResultsScreen = ({ userRole, purpose, time, onRestart }: ResultsScreenProp
     };
 
     handleMatching();
-  }, [userRole, purpose, time, submitMatchingRequest, listenForMatch, toast]);
+  }, []);
 
   const getTimeDisplay = (timeSlot: TimeSlot) => {
     switch (timeSlot) {
