@@ -3,6 +3,8 @@ import { UserRole, Purpose, TimeSlot } from '@/pages/Index';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
+import { useMatching } from '@/hooks/useMatching';
+import { useToast } from '@/hooks/use-toast';
 
 interface ResultsScreenProps {
   userRole: UserRole;
@@ -14,17 +16,66 @@ interface ResultsScreenProps {
 const ResultsScreen = ({ userRole, purpose, time, onRestart }: ResultsScreenProps) => {
   const [isMatched, setIsMatched] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const { submitMatchingRequest, listenForMatch, isMatching, error } = useMatching();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate matching logic with random chance
-    const timer = setTimeout(() => {
-      const matchChance = Math.random() > 0.4; // 60% chance of match for demo
-      setIsMatched(matchChance);
-      setLoading(false);
-    }, 2000);
+    const handleMatching = async () => {
+      if (!userRole || !purpose || !time) {
+        setLoading(false);
+        return;
+      }
 
-    return () => clearTimeout(timer);
-  }, []);
+      try {
+        const result = await submitMatchingRequest(userRole, purpose, time);
+        
+        if (result) {
+          if (result.matched) {
+            // Immediate match found
+            setIsMatched(true);
+            setLoading(false);
+          } else {
+            // No immediate match, wait for real-time updates
+            const cleanup = listenForMatch(result.request_id, (matchData) => {
+              console.log('Match found via realtime:', matchData);
+              setIsMatched(true);
+              setLoading(false);
+              toast({
+                title: "Match found!",
+                description: "You've been matched with someone special!",
+              });
+            });
+
+            // Set a timeout to stop waiting after 30 seconds
+            const timeout = setTimeout(() => {
+              setIsMatched(false);
+              setLoading(false);
+              cleanup();
+            }, 30000);
+
+            return () => {
+              cleanup();
+              clearTimeout(timeout);
+            };
+          }
+        } else {
+          setIsMatched(false);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error in matching process:', err);
+        setIsMatched(false);
+        setLoading(false);
+        toast({
+          title: "Connection error",
+          description: "There was an issue connecting to the matching service. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    handleMatching();
+  }, [userRole, purpose, time, submitMatchingRequest, listenForMatch, toast]);
 
   const getTimeDisplay = (timeSlot: TimeSlot) => {
     switch (timeSlot) {
@@ -35,7 +86,7 @@ const ResultsScreen = ({ userRole, purpose, time, onRestart }: ResultsScreenProp
     }
   };
 
-  if (loading) {
+  if (loading || isMatching) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center space-y-6 animate-in fade-in-50 duration-500">
@@ -47,6 +98,28 @@ const ResultsScreen = ({ userRole, purpose, time, onRestart }: ResultsScreenProp
             The universe is working its magic
           </p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="p-8 bg-white/95 backdrop-blur-sm border-0 shadow-2xl text-center space-y-6">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Connection Issue
+          </h1>
+          <p className="text-gray-600 leading-relaxed mb-6">
+            There was an issue connecting to our matching service. Please try again.
+          </p>
+          <Button 
+            onClick={onRestart}
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 rounded-lg transition-all duration-300"
+          >
+            Try Again
+          </Button>
+        </Card>
       </div>
     );
   }

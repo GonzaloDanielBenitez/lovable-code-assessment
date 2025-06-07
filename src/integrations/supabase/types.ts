@@ -9,16 +9,106 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      matches: {
+        Row: {
+          created_at: string
+          giver_request_id: string
+          id: string
+          meeting_location: string | null
+          purpose: Database["public"]["Enums"]["purpose_type"]
+          taker_request_id: string
+          time_slot: Database["public"]["Enums"]["time_slot"]
+        }
+        Insert: {
+          created_at?: string
+          giver_request_id: string
+          id?: string
+          meeting_location?: string | null
+          purpose: Database["public"]["Enums"]["purpose_type"]
+          taker_request_id: string
+          time_slot: Database["public"]["Enums"]["time_slot"]
+        }
+        Update: {
+          created_at?: string
+          giver_request_id?: string
+          id?: string
+          meeting_location?: string | null
+          purpose?: Database["public"]["Enums"]["purpose_type"]
+          taker_request_id?: string
+          time_slot?: Database["public"]["Enums"]["time_slot"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_giver_request_id_fkey"
+            columns: ["giver_request_id"]
+            isOneToOne: false
+            referencedRelation: "matching_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_taker_request_id_fkey"
+            columns: ["taker_request_id"]
+            isOneToOne: false
+            referencedRelation: "matching_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matching_requests: {
+        Row: {
+          created_at: string
+          id: string
+          matched_at: string | null
+          matched_with: string | null
+          purpose: Database["public"]["Enums"]["purpose_type"]
+          status: string
+          time_slot: Database["public"]["Enums"]["time_slot"]
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matched_at?: string | null
+          matched_with?: string | null
+          purpose: Database["public"]["Enums"]["purpose_type"]
+          status?: string
+          time_slot: Database["public"]["Enums"]["time_slot"]
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matched_at?: string | null
+          matched_with?: string | null
+          purpose?: Database["public"]["Enums"]["purpose_type"]
+          status?: string
+          time_slot?: Database["public"]["Enums"]["time_slot"]
+          user_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matching_requests_matched_with_fkey"
+            columns: ["matched_with"]
+            isOneToOne: false
+            referencedRelation: "matching_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      purpose_type: "spark-ideas" | "make-friends" | "find-meaning"
+      time_slot: "9am" | "2pm" | "7pm"
+      user_role: "taker" | "giver"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +223,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      purpose_type: ["spark-ideas", "make-friends", "find-meaning"],
+      time_slot: ["9am", "2pm", "7pm"],
+      user_role: ["taker", "giver"],
+    },
   },
 } as const
